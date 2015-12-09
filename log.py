@@ -82,7 +82,8 @@ class Logs(object):
 
     def tailer(self, path):
         with open(path, 'r') as fd:
-            yield from ((x, True) for x in fd)
+            for el in fd:
+                yield (el, True)
             yield ("", False)
             while True:
                 seen = False
