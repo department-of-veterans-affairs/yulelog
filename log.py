@@ -104,7 +104,7 @@ class Logs(object):
                     seen = True
                     yield (line, False)
                 if not seen:
-                    time.sleep(0.5)
+                    time.sleep(2)
                     yield ("", False)
 
     def report(self):
