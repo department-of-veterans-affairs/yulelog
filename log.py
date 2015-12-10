@@ -129,10 +129,13 @@ def humanize(delta):
         return "less than a minute"
     minutes = int(seconds//60)
     hours = int(minutes//60)
+    days = int(hours//24)
+    if days >= 1:
+        return "{0} day(s), {1} hour(s)".format(days, hours)
     if hours >= 1:
-        return "{0} hours".format(hours)
+        return "{0} hour(s)".format(hours)
     if minutes >= 1:
-        return "{0} minutes".format(minutes)
+        return "{0} minute(s)".format(minutes)
     return "long ago"
 
 def total_seconds(td):
@@ -152,7 +155,7 @@ def main(path):
         print("[2J[1;1H\n")
         for (key, record) in report.items():
             age = dt.datetime.utcnow() - record.end_time()
-            if age > dt.timedelta(hours=24):
+            if age > dt.timedelta(hours=48):
                 continue
 
             total += 1
