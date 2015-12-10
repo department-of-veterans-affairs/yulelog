@@ -154,7 +154,7 @@ def main(path):
         total = 0
         print("[2J[1;1H\n")
         for (key, record) in report.items():
-            age = dt.datetime.utcnow() - record.end_time()
+            age = dt.datetime.now() - record.end_time()
             if age > dt.timedelta(hours=48):
                 continue
 
