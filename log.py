@@ -151,11 +151,11 @@ def main(path):
         total = 0
         print("[2J[1;1H\n")
         for (key, record) in report.items():
-            total += 1
             age = dt.datetime.utcnow() - record.end_time()
             if age > dt.timedelta(hours=24):
                 continue
 
+            total += 1
             sys.stdout.write("{0}".format(key))
             if record.question():
                 sys.stdout.write("[33m")
