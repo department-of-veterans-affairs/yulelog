@@ -124,7 +124,7 @@ def print_flow(flow, length=5):
 
 
 def humanize(delta):
-    seconds = delta.total_seconds()
+    seconds = total_seconds(delta)
     if seconds <= 60:
         return "less than a minute"
     minutes = int(seconds//60)
@@ -134,6 +134,13 @@ def humanize(delta):
     if minutes >= 1:
         return "{0} minutes".format(minutes)
     return "long ago"
+
+def total_seconds(td):
+    """
+    Python 2.6 is the worst.
+    """
+    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+
 
 
 
