@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
 import re
+import os
 import sys
 import time
+
 from collections import defaultdict
+import datetime as dt
 
 
 def parse(line):
-    # data = re.match("I, \[(?P<date>.*) #(?P<id>.*)\]  (?P<level>.*) -- : Started (?P<method>.*) \"(?P<resource>.*)\" for (?P<client>.*) at (?P<datetime>.*)", line)
-    data = re.match("Started (?P<method>.*) \"(?P<resource>.*)\" for (?P<client>.*) at (?P<datetime>.*)", line)
+    data = re.match("I, \[(?P<date>.*) #(?P<id>.*)\]  (?P<level>.*) -- : Started (?P<method>.*) \"(?P<resource>.*)\" for (?P<client>.*) at (?P<datetime>.*)", line)
     if data is None:
         return
     return data.groupdict()
@@ -31,6 +33,16 @@ class Log(dict):
 
 
 class Record(list):
+    def start_time(self):
+        return sorted(self.times())[0]
+
+    def end_time(self):
+        return sorted(self.times())[-1]
+
+    def times(self):
+        for el in self:
+            yield dt.datetime.strptime(el['datetime'], "%Y-%m-%d %H:%M:%S -0600")
+
     def flow(self):
         return (x[1] for x in (y.parse_caseflow_url() for y in self) if x[0] is not None)
 
@@ -81,7 +93,8 @@ class Logs(object):
         self.activity[bfkey].append(entry)
 
     def tailer(self, path):
-        with open(path, 'r') as fd:
+        fh = os.open(path, os.O_RDONLY|os.O_NONBLOCK)
+        with os.fdopen(fh, "r") as fd:
             for el in fd:
                 yield (el, True)
             yield ("", False)
@@ -91,10 +104,11 @@ class Logs(object):
                     seen = True
                     yield (line, False)
                 if not seen:
-                    time.sleep(0.05)
+                    time.sleep(0.5)
+                    yield ("", False)
 
     def report(self):
-        return Report({k: Record(v) for (k, v) in self.activity.items()})
+        return Report(dict(((k, Record(v)) for (k, v) in self.activity.items())))
 
     def tail(self, path):
         for el, bulk in self.tailer(path):
@@ -109,12 +123,33 @@ def print_flow(flow, length=5):
     print("   " + " -> ".join(flow))
 
 
+def humanize(delta):
+    seconds = delta.total_seconds()
+    if seconds <= 60:
+        return "less than a minute"
+    minutes = int(seconds//60)
+    hours = int(minutes//60)
+    if hours >= 1:
+        return "{0} hours".format(hours)
+    if minutes >= 1:
+        return "{0} minutes".format(minutes)
+    return "long ago"
+
+
+
 def main(path):
     logs = Logs()
     for report in logs.tail(path):
-        print("[2J[1;1HStatus of Cases:\n")
+        good = 0
+        total = 0
+        print("[2J[1;1H\n")
         for (key, record) in report.items():
-            sys.stdout.write("{}".format(key))
+            total += 1
+            age = dt.datetime.utcnow() - record.end_time()
+            if age > dt.timedelta(hours=24):
+                continue
+
+            sys.stdout.write("{0}".format(key))
             if record.question():
                 sys.stdout.write("[33m")
             if record.generated():
@@ -123,7 +158,13 @@ def main(path):
                 sys.stdout.write("[31m[1m")
             if record.certified():
                 sys.stdout.write("[32m")
-            sys.stdout.write("[30G" + record.status() + "[0m\n")
+                good +=1
+            sys.stdout.write("[30G" + record.status() + "[0m")
+            sys.stdout.write("[40G{0} ago[0m\n".format(humanize(age)))
+
+        print("[1;1HStatus of Cases: [1m{0}/{1}[0m certified with Caseflow\n".format(
+            good, total
+        ))
         sys.stdout.flush()
 
 

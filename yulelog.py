@@ -51,21 +51,29 @@ def main(input_file, verbose="FALse"):
     verbose = verbose.lower() == "true"
 
     lines = structured(sorted(load(input_file), key=lambda x: x['datetime']))
+    total = 0
+    good = 0
+
     for session, activities in lines.items():
-        print("Session: {}".format(session))
+        if not activities[-1]['date'].startswith('2015-12-09'):
+            continue
+        print("Session: {0} ({1})".format(session, activities[-1]['date']))
         activity = reduce(activities)
         for id, flow in activity.items():
             certified = was_certified(flow)
+            total += 1
             if certified:
+                good += 1
                 sys.stdout.write("[32m")
             else:
                 sys.stdout.write("[31m")
 
-            sys.stdout.write("  {}".format(id))
+            sys.stdout.write("  {0}".format(id))
             print("[0m")
-            if verbose:
-                for page in flow:
-                    print("    {}".format(page))
+            if verbose and not certified:
+                print("    {0}".format(", ".join(flow)))
+
+    print("{0}/{1} cases certified with caseflow".format(good, total))
 
 
 if __name__ == "__main__":
