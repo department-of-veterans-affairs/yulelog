@@ -127,9 +127,9 @@ def humanize(delta):
     seconds = total_seconds(delta)
     if seconds <= 60:
         return "less than a minute"
-    minutes = int(seconds//60)
-    hours = int(minutes//60)
-    days = int(hours//24)
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
     if days >= 1:
         return "{0} day(s), {1} hour(s)".format(days, hours)
     if hours >= 1:
