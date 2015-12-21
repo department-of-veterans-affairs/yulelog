@@ -6,6 +6,7 @@ import sys
 import time
 
 from collections import defaultdict
+from optparse import OptionParser
 import datetime as dt
 
 
@@ -93,7 +94,7 @@ class Logs(object):
         self.activity[bfkey].append(entry)
 
     def tailer(self, path):
-        fh = os.open(path, os.O_RDONLY|os.O_NONBLOCK)
+        fh = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
         with os.fdopen(fh, "r") as fd:
             for el in fd:
                 yield (el, True)
@@ -138,6 +139,7 @@ def humanize(delta):
         return "{0} minute(s)".format(minutes)
     return "long ago"
 
+
 def total_seconds(td):
     """
     Python 2.6 is the worst.
@@ -145,19 +147,26 @@ def total_seconds(td):
     return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
 
+def main(argv):
+    parser = OptionParser()
+    parser.add_option("--since", dest="since", help="Format YY-MM-DD")
+    options, (path,) = parser.parse_args(argv)
 
+    if options.since:
+        since = dt.datetime.strptime(options.since, "%Y-%m-%d")
+    else:
+        since = None
 
-def main(path):
     logs = Logs()
     for report in logs.tail(path):
         good = 0
         total = 0
         print("[2J[1;1H\n")
         for (key, record) in sorted(report.items(), key=lambda x: x[1].end_time(), reverse=True):
-            age = dt.datetime.now() - record.end_time()
-            if age > dt.timedelta(hours=48):
+            if since is not None and record.end_time() < since:
                 continue
 
+            age = dt.datetime.now() - record.end_time()
             total += 1
             sys.stdout.write("{0}".format(key))
             if record.question():
@@ -168,7 +177,7 @@ def main(path):
                 sys.stdout.write("[31m[1m")
             if record.certified():
                 sys.stdout.write("[32m")
-                good +=1
+                good += 1
             sys.stdout.write("[30G" + record.status() + "[0m")
             sys.stdout.write("[40G{0} ago[0m\n".format(humanize(age)))
 
@@ -179,4 +188,4 @@ def main(path):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+    main(sys.argv[1:])
