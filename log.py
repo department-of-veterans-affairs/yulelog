@@ -149,7 +149,7 @@ def total_seconds(td):
 
 def main(argv):
     parser = OptionParser()
-    parser.add_option("--since", dest="since", help="Format YY-MM-DD")
+    parser.add_option("--since", dest="since", help="Format YYYY-MM-DD")
     options, (path,) = parser.parse_args(argv)
 
     if options.since:
